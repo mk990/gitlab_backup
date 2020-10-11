@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+import requests
+import json
+import config
+from git import Repo 
+import os
+import datetime
+
+directory="gitlabBackup_"+datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+if not os.path.exists(directory):
+    os.makedirs(directory)
+
+proxies = {
+    'http': "socks5://127.0.0.1:1080",
+    'https': "socks5://127.0.0.1:1080"    
+    }
+headers={
+    "PRIVATE-TOKEN":config.GITLAB_TOKEN
+}
+
+url="https://gitlab.com/api/v4/projects?simple=true&membership=true&pagination=keyset&order_by=id&sort=asc&per_page=100"
+
+page=requests.get(url,proxies=proxies,headers=headers)
+
+for project in page.json():
+    http_url=project['http_url_to_repo']
+    dir_name=f"{directory}/{project['name']}"
+    git_url=str(http_url).replace("://",f"://oauth2:{config.GITLAB_TOKEN}@")
+    Repo.clone_from(git_url,dir_name)
